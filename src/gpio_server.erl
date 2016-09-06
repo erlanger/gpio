@@ -83,7 +83,7 @@ init(Options) ->
     ?dbg("init: options ~p", [Options]),
     process_flag(trap_exit, true),
     Arch = erlang:system_info(system_architecture),
-    case erl_ddll:load(filename:join([code:priv_dir(gpio), Arch, ?GPIO_DRV])) of
+    case erl_ddll:load(filename:join([code:priv_dir(gpio), Arch]), ?GPIO_DRV) of
 	LoadRes when LoadRes =:= ok;
 		     LoadRes =:= { error, already_loaded } ->
 	    Dbg = case proplists:get_value(debug, Options, false) of

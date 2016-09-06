@@ -1,3 +1,4 @@
+%% coding: latin-1
 %%%---- BEGIN COPYRIGHT -------------------------------------------------------
 %%%
 %%% Copyright (C) 2013 Feuerlabs, Inc. All rights reserved.
@@ -13,7 +14,7 @@
 %%% @doc
 %%%  GPIO application
 %%%
-%%% Created: 2012 by Magnus Feuer 
+%%% Created: 2012 by Magnus Feuer
 %%% @end
 -module(gpio_app).
 
@@ -36,15 +37,15 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the application.<br/>
-%% Arguments are ignored, instead the options for the application server are 
+%% Arguments are ignored, instead the options for the application server are
 %% retreived from the application environment (sys.config).
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start(StartType:: normal | 
-			{takeover, Node::atom()} | 
-			{failover, Node::atom()}, 
-	    StartArgs::term()) -> 
+-spec start(StartType:: normal |
+			{takeover, Node::atom()} |
+			{failover, Node::atom()},
+	    StartArgs::term()) ->
 		   {ok, Pid::pid()} |
 		   {ok, Pid::pid(), State::term()} |
 		   {error, Reason::term()}.

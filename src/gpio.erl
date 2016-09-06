@@ -1,3 +1,4 @@
+%% coding: latin-1
 %%%---- BEGIN COPYRIGHT -------------------------------------------------------
 %%%
 %%% Copyright (C) 2013 Feuerlabs, Inc. All rights reserved.
@@ -14,7 +15,7 @@
 %%% @doc
 %%%  GPIO interface
 %%%
-%%% Created: 2012 by Magnus Feuer 
+%%% Created: 2012 by Magnus Feuer
 %%% @end
 
 -module(gpio).
@@ -27,10 +28,10 @@
 	 init_direct/2,
 	 release/1,
 	 release/2,
-	 set/1, 
-	 set/2, 
-	 clr/1, 
-	 clr/2, 
+	 set/1,
+	 set/2,
+	 clr/1,
+	 clr/2,
 	 get/1,
 	 get/2,
 	 input/1,
@@ -122,9 +123,9 @@ init(Pin) ->
 %% Inits pin in pin register, i.e. prepares it for use.
 %% @end
 %%--------------------------------------------------------------------
--spec gpio:init(PinReg::unsigned(), Pin::unsigned()) -> 
+-spec gpio:init(PinReg::unsigned(), Pin::unsigned()) ->
 		       ok | {error,Reason::posix()}.
-init(PinReg, Pin) 
+init(PinReg, Pin)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_INIT, <<PinReg:8, Pin:8, ?DIRECT_ACCESS_OFF:8>>).
 
@@ -146,15 +147,15 @@ init_direct(Pin) ->
 %% Actions on this pin will access physical address directly.
 %% @end
 %%--------------------------------------------------------------------
--spec gpio:init_direct(PinReg::unsigned(), Pin::unsigned()) -> 
+-spec gpio:init_direct(PinReg::unsigned(), Pin::unsigned()) ->
 			      ok | {error,Reason::posix()}.
-init_direct(PinReg, Pin) 
+init_direct(PinReg, Pin)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_INIT, <<PinReg:8, Pin:8, ?DIRECT_ACCESS_ON:8>>).
 
 
 %%--------------------------------------------------------------------
-%% @doc Releases pin in pin register 0.  
+%% @doc Releases pin in pin register 0.
 %% @end
 %%--------------------------------------------------------------------
 -spec gpio:release(Pin::unsigned()) -> ok | {error,Reason::posix()}.
@@ -163,12 +164,12 @@ release(Pin) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc Releases pin in pin register.  
+%% @doc Releases pin in pin register.
 %% @end
 %%--------------------------------------------------------------------
--spec gpio:release(PinReg::unsigned(), Pin::unsigned()) -> 
+-spec gpio:release(PinReg::unsigned(), Pin::unsigned()) ->
 			  ok | {error,Reason::posix()}.
-release(PinReg, Pin) 
+release(PinReg, Pin)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_RELEASE, <<PinReg:8, Pin:8>>).
 
@@ -187,9 +188,9 @@ set(Pin) ->
 %% Sets pin in pin register, i.e. sets it to 1.
 %% @end
 %%--------------------------------------------------------------------
--spec gpio:set(PinReg::unsigned(), Pin::unsigned())  -> 
+-spec gpio:set(PinReg::unsigned(), Pin::unsigned())  ->
 		      ok | {error,Reason::posix()}.
-set(PinReg, Pin) 
+set(PinReg, Pin)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_SET, <<PinReg:8, Pin:8>>).
 
@@ -207,9 +208,9 @@ clr(Pin) ->
 %% Clears pin in pin register, i.e. sets it to 0.
 %% @end
 %%--------------------------------------------------------------------
--spec gpio:clr(PinReg::unsigned(), Pin::unsigned())  -> 
+-spec gpio:clr(PinReg::unsigned(), Pin::unsigned())  ->
 		      ok | {error,Reason::posix()}.
-clr(PinReg, Pin) 
+clr(PinReg, Pin)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_CLR, <<PinReg:8, Pin:8>>).
 
@@ -218,7 +219,7 @@ clr(PinReg, Pin)
 %% Gets value for pin in pin register 0.
 %% @end
 %%--------------------------------------------------------------------
--spec gpio:get(Pin::unsigned()) -> 
+-spec gpio:get(Pin::unsigned()) ->
 		      {ok,uint1()} | {error,Reason::posix()}.
 get(Pin) ->
     get(0, Pin).
@@ -228,9 +229,9 @@ get(Pin) ->
 %% Gets value for pin in pin register.
 %% @end
 %%--------------------------------------------------------------------
--spec gpio:get(PinReg::unsigned(), Pin::unsigned()) -> 
+-spec gpio:get(PinReg::unsigned(), Pin::unsigned()) ->
 		      {ok,uint1()} | {error,Reason::posix()}.
-get(PinReg, Pin) 
+get(PinReg, Pin)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_GET, <<PinReg:8, Pin:8>>).
 
@@ -249,7 +250,7 @@ input(Pin) ->
 %% Sets direction in for pin in pin register.
 %% @end
 %%--------------------------------------------------------------------
--spec gpio:input(PinReg::unsigned(), Pin::unsigned()) -> 
+-spec gpio:input(PinReg::unsigned(), Pin::unsigned()) ->
 			ok | {error,Reason::posix()}.
 
 input(PinReg, Pin) ->
@@ -270,7 +271,7 @@ output(Pin) ->
 %% Sets direction out for pin in pin register.
 %% @end
 %%--------------------------------------------------------------------
--spec gpio:output(PinReg::unsigned(), Pin::unsigned()) -> 
+-spec gpio:output(PinReg::unsigned(), Pin::unsigned()) ->
 			 ok | {error,Reason::posix()}.
 
 output(PinReg, Pin) ->
@@ -282,7 +283,7 @@ output(PinReg, Pin) ->
 %% @end
 %%--------------------------------------------------------------------
 -type direction()::in | out | high | low.
-	
+
 -spec set_direction(Pin::unsigned(),
 		    Dir::direction()) ->
 			   ok | {error,Reason::posix()}.
@@ -295,21 +296,21 @@ set_direction(Pin, Dir) ->
 %% Sets direction for pin in pin register.
 %% @end
 %%--------------------------------------------------------------------
--spec set_direction(PinReg::unsigned(), 
+-spec set_direction(PinReg::unsigned(),
 		    Pin::unsigned(),
 		    Dir::direction()) ->
 			   ok | {error,Reason::posix()}.
 
-set_direction(PinReg, Pin, in) 
+set_direction(PinReg, Pin, in)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_SET_DIRECTION, <<PinReg:8,Pin:8,?DIR_IN>>);
-set_direction(PinReg, Pin, out) 
+set_direction(PinReg, Pin, out)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_SET_DIRECTION, <<PinReg:8,Pin:8,?DIR_OUT>>);
-set_direction(PinReg, Pin, high) 
+set_direction(PinReg, Pin, high)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_SET_DIRECTION, <<PinReg:8,Pin:8,?DIR_HIGH>>);
-set_direction(PinReg, Pin, low) 
+set_direction(PinReg, Pin, low)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_SET_DIRECTION, <<PinReg:8,Pin:8,?DIR_LOW>>).
 
@@ -318,7 +319,7 @@ set_direction(PinReg, Pin, low)
 %% Gets direction for pin in pin register 0.
 %% @end
 %%--------------------------------------------------------------------
--spec get_direction(Pin::unsigned()) -> 
+-spec get_direction(Pin::unsigned()) ->
 			   {ok,in|out} | {error,Reason::posix()}.
 
 get_direction(Pin) ->
@@ -329,11 +330,11 @@ get_direction(Pin) ->
 %% Gets direction for pin in pin register.
 %% @end
 %%--------------------------------------------------------------------
--spec get_direction(PinReg::unsigned(), 
-		    Pin::unsigned()) -> 
+-spec get_direction(PinReg::unsigned(),
+		    Pin::unsigned()) ->
 			   {ok,in|out} | {error,Reason::posix()}.
 
-get_direction(PinReg, Pin) 
+get_direction(PinReg, Pin)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     case call(?GPIO_PORT, ?CMD_GET_DIRECTION, <<PinReg:8, Pin:8>>) of
 	{ok, ?DIR_IN}  -> {ok,in};
@@ -360,21 +361,21 @@ set_interrupt(Pin, Style) ->
 %% Sets interrupt style for pin in pin register.
 %% @end
 %%--------------------------------------------------------------------
--spec set_interrupt(PinReg::unsigned(), 
+-spec set_interrupt(PinReg::unsigned(),
 		    Pin::unsigned(),
 		    Style::style()) ->
 			   ok | {error,Reason::posix()}.
 
-set_interrupt(PinReg, Pin, none) 
+set_interrupt(PinReg, Pin, none)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_SET_INTERRUPT, <<PinReg:8,Pin:8,?INT_NONE>>);
-set_interrupt(PinReg, Pin, rising) 
+set_interrupt(PinReg, Pin, rising)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_SET_INTERRUPT, <<PinReg:8,Pin:8,?INT_RISING>>);
-set_interrupt(PinReg, Pin, falling) 
+set_interrupt(PinReg, Pin, falling)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_SET_INTERRUPT, <<PinReg:8,Pin:8,?INT_FALLING>>);
-set_interrupt(PinReg, Pin, both) 
+set_interrupt(PinReg, Pin, both)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     call(?GPIO_PORT, ?CMD_SET_INTERRUPT, <<PinReg:8,Pin:8,?INT_BOTH>>).
 
@@ -383,7 +384,7 @@ set_interrupt(PinReg, Pin, both)
 %% Gets interrupt style for pin in pin register 0.
 %% @end
 %%--------------------------------------------------------------------
--spec get_interrupt(Pin::unsigned()) -> 
+-spec get_interrupt(Pin::unsigned()) ->
 			   {ok,Style::style()} |
 			   {error,Reason::posix()}.
 
@@ -395,12 +396,12 @@ get_interrupt(Pin) ->
 %% Gets interrupt style for pin in pin register.
 %% @end
 %%--------------------------------------------------------------------
--spec get_interrupt(PinReg::unsigned(), 
-		    Pin::unsigned()) -> 
+-spec get_interrupt(PinReg::unsigned(),
+		    Pin::unsigned()) ->
 			   {ok,Style::style()} |
 			   {error,Reason::posix()}.
 
-get_interrupt(PinReg, Pin) 
+get_interrupt(PinReg, Pin)
   when is_integer(PinReg), PinReg >= 0, is_integer(Pin), Pin >= 0 ->
     case call(?GPIO_PORT, ?CMD_GET_INTERRUPT, <<PinReg:8, Pin:8>>) of
 	{ok, ?INT_NONE}    -> {ok,none};
@@ -436,7 +437,7 @@ clr_mask(Mask) ->
 %%--------------------------------------------------------------------
 -spec gpio:set_mask(PinReg::unsigned(), Mask::unsigned()) ->
 			        ok | {error,Reason::posix()}.
-set_mask(PinReg, Mask) 
+set_mask(PinReg, Mask)
   when is_integer(PinReg), PinReg >= 0, is_integer(Mask), Mask >= 0 ->
     call(?GPIO_PORT, ?CMD_SET_MASK, <<PinReg:8, Mask:32>>).
 
@@ -447,7 +448,7 @@ set_mask(PinReg, Mask)
 %%--------------------------------------------------------------------
 -spec gpio:clr_mask(PinReg::unsigned(), Mask::unsigned()) ->
 			       ok | {error,Reason::posix()}.
-clr_mask(PinReg, Mask) 
+clr_mask(PinReg, Mask)
   when is_integer(PinReg), PinReg >= 0, is_integer(Mask), Mask >= 0 ->
     call(?GPIO_PORT, ?CMD_CLR_MASK, <<PinReg:8, Mask:32>>).
 
@@ -457,10 +458,10 @@ clr_mask(PinReg, Mask)
 %% Read pins in mask in pin register 0
 %% @end
 %%--------------------------------------------------------------------
--spec get_mask(PinReg::unsigned()) -> 
+-spec get_mask(PinReg::unsigned()) ->
 		      {ok,Value::unsigned()} | {error,Reason::posix()}.
 
-get_mask(Mask) when 
+get_mask(Mask) when
       is_integer(Mask), Mask >= 0 ->
     get_mask(0, Mask).
 
@@ -469,10 +470,10 @@ get_mask(Mask) when
 %% Read pins in mask in pin register.
 %% @end
 %%--------------------------------------------------------------------
--spec get_mask(PinReg::unsigned(), Mask::unsigned()) -> 
+-spec get_mask(PinReg::unsigned(), Mask::unsigned()) ->
 		      {ok,Value::unsigned()} | {error,Reason::posix()}.
 
-get_mask(PinReg, Mask) 
+get_mask(PinReg, Mask)
   when is_integer(PinReg), PinReg >= 0, is_integer(Mask), Mask >= 0 ->
     call(?GPIO_PORT, ?CMD_GET_MASK, <<PinReg:8, Mask:32>>).
 
@@ -481,7 +482,7 @@ get_mask(PinReg, Mask)
 %% Controls debug.
 %% @end
 %%--------------------------------------------------------------------
--type level():: 
+-type level()::
 	none |
 	info |
 	notice |
@@ -532,7 +533,7 @@ call(Port, Cmd, Data) ->
     case erlang:port_control(Port, Cmd, Data) of
 	<<0>> ->
 	    ok;
-	<<255,E/binary>> -> 
+	<<255,E/binary>> ->
 	    {error, erlang:binary_to_atom(E, latin1)};
 	<<1,Y>> -> {ok,Y};
 	<<2,Y:16/native-unsigned>> -> {ok, Y};

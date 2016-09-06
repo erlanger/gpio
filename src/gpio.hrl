@@ -1,3 +1,4 @@
+%% coding: latin-1
 %%%---- BEGIN COPYRIGHT -------------------------------------------------------
 %%%
 %%% Copyright (C) 2013 Feuerlabs, Inc. All rights reserved.
@@ -27,10 +28,10 @@
 -define(GPIO_DRV, gpio_drv).
 -define(GPIO_PORT, gpio_port).
 
--define(dbg(String, List), 
+-define(dbg(String, List),
 	io:format("~p: " ++ String, [?MODULE | List])).
 
-%% Convenience defines 
+%% Convenience defines
 -ifndef(ee).
 -define(ee(String, List), error_logger:error_msg(String, List)).
 -endif.

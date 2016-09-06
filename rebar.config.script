@@ -6,7 +6,7 @@
 %% file in order to have a flat view of the dependency tree, we should nil out our local
 %% deps list provided by our local rebar.config
 %%
-case os:getenv("EXODEV_COMP") of
+CFG1=case os:getenv("EXODEV_COMP") of
     false ->
         CONFIG;
 
@@ -15,4 +15,22 @@ case os:getenv("EXODEV_COMP") of
             { value, _, Remainder } -> Remainder;
             _ -> CONFIG
         end
-end.
+end,
+
+%% Write output .so files to priv/<Arch>/
+%% This prevents constant rebuilding when working on different
+%% architectures, and allows one release file to contain
+%% the binaries for several architectures.
+Arch = erlang:system_info(system_architecture),
+
+% Replace configuration options read from rebar.config with those dynamically set below
+lists:keymerge(1,
+    lists:keysort(1, [
+        {port_specs, [
+                      {filename:join(["priv", Arch, "gpio_drv.so"]), 
+                       ["c_src/gpio_drv.c",
+                        "c_src/gpio_bcm2835.c"
+                       ]}
+                     ]}
+    ]),
+    lists:keysort(1, CFG1)).

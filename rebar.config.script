@@ -31,6 +31,7 @@ lists:keymerge(1,
                        ["c_src/gpio_drv.c",
                         "c_src/gpio_bcm2835.c"
                        ]}
-                     ]}
+                     ]},
+        {artifacts, [filename:join(["priv", Arch, "gpio_drv.so"])]}
     ]),
     lists:keysort(1, CFG1)).

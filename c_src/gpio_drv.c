@@ -25,8 +25,10 @@
 #include <string.h>
 #include <sys/mman.h>
 
-#if USE_EPOLL 
-#define MAX_EPOLL_EVENTS 64 
+#define USE_EPOLL /*This is required from OTP 21 onwards */
+
+#ifdef USE_EPOLL
+#define MAX_EPOLL_EVENTS 64
 // if driver_event is not working, maybe kernel events was enabled?
 #include <sys/epoll.h>
 #endif
@@ -89,7 +91,7 @@ typedef struct gpio_pin_t
     uint8_t  pin_reg;
     uint8_t  pin;
     bool direct; // Not needed ??
-    struct gpio_pin_t* next;   // when linked    
+    struct gpio_pin_t* next;   // when linked
     ErlDrvEvent fd;   // To /sys/class/gpio/gpioX/value
     gpio_interrupt_t interrupt;
     ErlDrvTermData target;     // interrupt target
@@ -180,7 +182,7 @@ void gpio_emit_log(int level, char* file, int line, ...)
 	((gpio_debug_level >= 0) && (level <= gpio_debug_level))) {
 	va_start(ap, line);
 	fmt = va_arg(ap, char*);
-	fprintf(stderr, "%s:%d: ", file, line); 
+	fprintf(stderr, "%s:%d: ", file, line);
 	vfprintf(stderr, fmt, ap);
 	fprintf(stderr, "\r\n");
 	va_end(ap);
@@ -232,10 +234,10 @@ static inline void put_uint32(uint8_t* ptr, uint32_t v)
 // Support functions
 //--------------------------------------------------------------------
 //--------------------------------------------------------------------
-// Create new gpio pin first in list 
+// Create new gpio pin first in list
 //--------------------------------------------------------------------
-static gpio_pin_t* create_pin(gpio_ctx_t* ctx, 
-			      uint8_t pin_reg, 
+static gpio_pin_t* create_pin(gpio_ctx_t* ctx,
+			      uint8_t pin_reg,
 			      uint8_t pin)
 {
     gpio_pin_t* gp;
@@ -256,12 +258,12 @@ static gpio_pin_t* create_pin(gpio_ctx_t* ctx,
 
     // If register 0 or 1 use predefined arrays
     // otherwise put in linked list
-    if ((pin_reg == 0) && (pin < 32)) 
+    if ((pin_reg == 0) && (pin < 32))
 	ctx->reg0[pin] = gp;
-    else if ((pin_reg == 1) && (pin < 32)) 
+    else if ((pin_reg == 1) && (pin < 32))
 	ctx->reg1[pin] = gp;
     else {
-	DEBUGF("create_pin: adding pin %d:%d to linked list", 
+	DEBUGF("create_pin: adding pin %d:%d to linked list",
 	       pin_reg, pin);
 	gp->next = ctx->first;
 	ctx->first = gp;
@@ -273,8 +275,8 @@ static gpio_pin_t* create_pin(gpio_ctx_t* ctx,
 //--------------------------------------------------------------------
 // Find gpio pin in list
 //--------------------------------------------------------------------
-static gpio_pin_t* find_pin(gpio_ctx_t* ctx, 
-			    uint8_t pin_reg, 
+static gpio_pin_t* find_pin(gpio_ctx_t* ctx,
+			    uint8_t pin_reg,
 			    uint8_t pin,
 			    gpio_pin_t*** gppp)
 {
@@ -297,7 +299,7 @@ static gpio_pin_t* find_pin(gpio_ctx_t* ctx,
 	while(*gpp) {
 	    gpio_pin_t* gp = *gpp;
 	    if ((gp->pin_reg == pin_reg) && (gp->pin == pin)) {
-		if (gppp) *gppp = gpp; 
+		if (gppp) *gppp = gpp;
 		return gp;
 	    }
 	    gpp = &gp->next;
@@ -385,7 +387,7 @@ static int unexport(int pin)
 }
 
 //--------------------------------------------------------------------
-// Open the value file, used for input/ouptput. 
+// Open the value file, used for input/ouptput.
 // See kernel/Documentation/gpio.txt
 //--------------------------------------------------------------------
 static int open_value_file(int pin)
@@ -407,15 +409,15 @@ static int open_value_file(int pin)
 	gpio_errno = errno;
 	DEBUGF("Value file %s has fd %d", path, fd);
     }
-    return fd; 
+    return fd;
 }
 
 //--------------------------------------------------------------------
 // Initialize with files always
 //--------------------------------------------------------------------
-static gpio_pin_t* init_pin(gpio_ctx_t* ctx, 
-			    int pin_reg, 
-			    int pin) 
+static gpio_pin_t* init_pin(gpio_ctx_t* ctx,
+			    int pin_reg,
+			    int pin)
 {
     gpio_pin_t* gp = NULL;
     int fd = -1;
@@ -455,7 +457,7 @@ static gpio_pin_t* init_pin(gpio_ctx_t* ctx,
 //--------------------------------------------------------------------
 // Go through necessary release steps
 //--------------------------------------------------------------------
-static int release_pin(gpio_ctx_t* ctx, int pin_reg, int pin) 
+static int release_pin(gpio_ctx_t* ctx, int pin_reg, int pin)
 {
     gpio_pin_t* gp;
     gpio_pin_t** gpp;
@@ -463,7 +465,7 @@ static int release_pin(gpio_ctx_t* ctx, int pin_reg, int pin)
     DEBUGF("release_pin: pin %d:%d", pin_reg, pin);
     if (unexport(pin) != GPIO_OK)
 	return GPIO_NOK;
-    
+
     if ((gp=find_pin(ctx, pin_reg, pin, &gpp)) == NULL)
 	return GPIO_OK; // or badarg ???
     if (gp->interrupt) {
@@ -475,7 +477,7 @@ static int release_pin(gpio_ctx_t* ctx, int pin_reg, int pin)
     *gpp = gp->next; // unlink
     driver_free(gp);
 
-    DEBUGF("release_pin: pin %d:%d released", 
+    DEBUGF("release_pin: pin %d:%d released",
 	   pin_reg, pin);
 
     return GPIO_OK;
@@ -483,7 +485,7 @@ static int release_pin(gpio_ctx_t* ctx, int pin_reg, int pin)
 //--------------------------------------------------------------------
 // Write pin direction in direction file
 //--------------------------------------------------------------------
-static int gpio_set_direction_indirect(gpio_pin_t* gp, 
+static int gpio_set_direction_indirect(gpio_pin_t* gp,
 				       gpio_direction_t direction)
 {
     char* value = "";
@@ -508,19 +510,19 @@ static int gpio_set_direction_indirect(gpio_pin_t* gp,
 //--------------------------------------------------------------------
 // Write pin direction
 //--------------------------------------------------------------------
-static int gpio_set_direction(gpio_ctx_t* ctx, 
-			      gpio_pin_t* gp, 
+static int gpio_set_direction(gpio_ctx_t* ctx,
+			      gpio_pin_t* gp,
 			      gpio_direction_t direction)
 {
     int result;
 
-    DEBUGF("set direction to %d on pin %d:%d", 
+    DEBUGF("set direction to %d on pin %d:%d",
 	   direction, gp->pin_reg, gp->pin);
 
     if (gp->direct)
 	result = (*ctx->meth->set_direction)(ctx->gpio_reg,
 					     gp->pin_reg, gp->pin, direction);
-    else 
+    else
 	result = gpio_set_direction_indirect(gp, direction);
 
     return result;
@@ -529,7 +531,7 @@ static int gpio_set_direction(gpio_ctx_t* ctx,
 //--------------------------------------------------------------------
 // Get pin state from value file
 //--------------------------------------------------------------------
-static int gpio_get_direction_indirect(gpio_pin_t* gp, 
+static int gpio_get_direction_indirect(gpio_pin_t* gp,
 				       gpio_direction_t *dp)
 {
     char path[128];
@@ -560,17 +562,17 @@ static int gpio_get_direction_indirect(gpio_pin_t* gp,
     direction[n] = '\0';
 
     switch(direction[0]) {
-    case 'i': 
-	if (strcmp(direction,"in\n") == 0) *dp = gpio_direction_in; 
+    case 'i':
+	if (strcmp(direction,"in\n") == 0) *dp = gpio_direction_in;
 	break;
-    case 'o': 
-	if  (strcmp(direction,"out\n") == 0) *dp = gpio_direction_out; 
+    case 'o':
+	if  (strcmp(direction,"out\n") == 0) *dp = gpio_direction_out;
 	break;
-    case 'l': 
-	if  (strcmp(direction,"low\n") == 0) *dp = gpio_direction_low; 
+    case 'l':
+	if  (strcmp(direction,"low\n") == 0) *dp = gpio_direction_low;
 	break;
-    case 'h': 
-	if  (strcmp(direction,"high\n") == 0) *dp = gpio_direction_high; 
+    case 'h':
+	if  (strcmp(direction,"high\n") == 0) *dp = gpio_direction_high;
 	break;
     default:
         DEBUGF("Illegal direction %s.", direction);
@@ -579,7 +581,7 @@ static int gpio_get_direction_indirect(gpio_pin_t* gp,
 	return GPIO_NOK;
     }
 
-    DEBUGF("Read direction %d for pin %d:%d from file %d.", 
+    DEBUGF("Read direction %d for pin %d:%d from file %d.",
 	   *dp, gp->pin_reg, gp->pin, fd);
     return GPIO_OK;
 }
@@ -587,8 +589,8 @@ static int gpio_get_direction_indirect(gpio_pin_t* gp,
 //--------------------------------------------------------------------
 // Read pin direction
 //--------------------------------------------------------------------
-static int gpio_get_direction(gpio_ctx_t* ctx, 
-			      gpio_pin_t* gp, 
+static int gpio_get_direction(gpio_ctx_t* ctx,
+			      gpio_pin_t* gp,
 			      gpio_direction_t* dp)
 {
     int result;
@@ -598,7 +600,7 @@ static int gpio_get_direction(gpio_ctx_t* ctx,
     if (gp->direct)
 	result = (*ctx->meth->get_direction)(ctx->gpio_reg,
 					     gp->pin_reg, gp->pin, dp);
-    else 
+    else
 	result = gpio_get_direction_indirect(gp, dp);
 
     return result;
@@ -607,15 +609,15 @@ static int gpio_get_direction(gpio_ctx_t* ctx,
 //--------------------------------------------------------------------
 // Find pin or create it with correct direction
 //--------------------------------------------------------------------
-static gpio_pin_t* find_or_create_pin(gpio_ctx_t* ctx, 
-				      uint8_t pin_reg, 
+static gpio_pin_t* find_or_create_pin(gpio_ctx_t* ctx,
+				      uint8_t pin_reg,
 				      uint8_t pin,
 				      gpio_direction_t direction)
 {
     gpio_pin_t* gp = NULL;
 
     if ((gp=find_pin(ctx, pin_reg, pin, NULL)) == NULL) {
-	if (!ctx->auto_create) 
+	if (!ctx->auto_create)
 	    return NULL;
 	// We should create it
 	if ((gp=init_pin(ctx, pin_reg, pin)) == NULL)
@@ -660,13 +662,13 @@ static int gpio_set_indirect(gpio_pin_t* gp, gpio_state_t state)
 }
 
 //--------------------------------------------------------------------
-// Set pin state 
+// Set pin state
 //--------------------------------------------------------------------
-static int gpio_set_state(gpio_ctx_t* ctx, 
-			  gpio_pin_t* gp, 
+static int gpio_set_state(gpio_ctx_t* ctx,
+			  gpio_pin_t* gp,
 			  gpio_state_t state)
 {
-    DEBUGF("Changing state to %d on pin %d:%d", 
+    DEBUGF("Changing state to %d on pin %d:%d",
 	   state, gp->pin_reg, gp->pin);
 
     if (gp->direct) {
@@ -676,7 +678,7 @@ static int gpio_set_state(gpio_ctx_t* ctx,
 	else
 	    return (*ctx->meth->clr_mask)(ctx->gpio_reg, gp->pin_reg, mask);
     }
-    else 
+    else
 	return gpio_set_indirect(gp, state);
 }
 
@@ -687,14 +689,14 @@ static int gpio_get_indirect(gpio_pin_t* gp,
 			     uint8_t* sp)
 {
     char state;
-    
+
     // Read state from value file
     lseek(INT_EVENT(gp->fd), 0, SEEK_SET);
     if (read(INT_EVENT(gp->fd), &state, 1) != 1) {
 	gpio_errno = errno;
 	return GPIO_NOK;
     }
-    
+
     // Transform from char to uint
     *sp = state - '0';
     if (*sp > 1) {
@@ -702,16 +704,16 @@ static int gpio_get_indirect(gpio_pin_t* gp,
 	gpio_errno = EINVAL;
 	return GPIO_NOK;
     }
-    DEBUGF("Read state %d for pin %d:%d from file %d.", 
+    DEBUGF("Read state %d for pin %d:%d from file %d.",
 	   *sp, gp->pin_reg, gp->pin, gp->fd);
     return GPIO_OK;
 
 }
 
 //--------------------------------------------------------------------
-// Get pin state 
+// Get pin state
 //--------------------------------------------------------------------
-static int gpio_get_state(gpio_ctx_t* ctx, 
+static int gpio_get_state(gpio_ctx_t* ctx,
 			  gpio_pin_t* gp,
 			  uint8_t* sp)
 {
@@ -722,15 +724,15 @@ static int gpio_get_state(gpio_ctx_t* ctx,
 	*sp = (mask >> gp->pin) & 1;
 	return GPIO_OK;
     }
-    else 
+    else
 	return gpio_get_indirect(gp, sp);
 }
 
 //--------------------------------------------------------------------
 // Add pin to direct access mask
 //--------------------------------------------------------------------
-static int set_pin_in_mask(gpio_ctx_t* ctx, 
-			   uint8_t pin_reg, 
+static int set_pin_in_mask(gpio_ctx_t* ctx,
+			   uint8_t pin_reg,
 			   uint8_t pin)
 {
     if ((pin_reg > 1) || (pin > 31)) {
@@ -741,7 +743,7 @@ static int set_pin_in_mask(gpio_ctx_t* ctx,
 	ctx->reg0_direct_pins |= 1 << pin;
     else if (pin_reg == 1)
 	ctx->reg1_direct_pins |= 1 << pin;
-    else 
+    else
 	return GPIO_NOK;
 
     return GPIO_OK;
@@ -749,8 +751,8 @@ static int set_pin_in_mask(gpio_ctx_t* ctx,
 //--------------------------------------------------------------------
 // Remove pin from direct access mask
 //--------------------------------------------------------------------
-static int clr_pin_in_mask(gpio_ctx_t* ctx, 
-			   uint8_t pin_reg, 
+static int clr_pin_in_mask(gpio_ctx_t* ctx,
+			   uint8_t pin_reg,
 			   uint8_t pin)
 {
     if ((pin_reg > 1) || (pin > 31)) {
@@ -761,7 +763,7 @@ static int clr_pin_in_mask(gpio_ctx_t* ctx,
 	ctx->reg0_direct_pins &= ~(1 << pin);
     else if (pin_reg == 1)
 	ctx->reg1_direct_pins &= ~(1 << pin);
-    else 
+    else
 	return GPIO_NOK;
 
     return GPIO_OK;
@@ -771,9 +773,9 @@ static int clr_pin_in_mask(gpio_ctx_t* ctx,
 // Set pin states for pins defined by mask
 // Applicable for pins in register 0 and 1
 //--------------------------------------------------------------------
-static int gpio_set_mask_on_reg(gpio_ctx_t* ctx, 
-				uint8_t pin_reg, 
-				uint32_t mask, 
+static int gpio_set_mask_on_reg(gpio_ctx_t* ctx,
+				uint8_t pin_reg,
+				uint32_t mask,
 				gpio_state_t state)
 {
     gpio_pin_t* gp;
@@ -808,7 +810,7 @@ static int gpio_set_mask_on_reg(gpio_ctx_t* ctx,
 	indirect_mask = mask & ~(ctx->reg1_direct_pins);
 	gpp = ctx->reg1;
     }
-    else 
+    else
 	return GPIO_NOK;
 
     // Take care of rest (if any)
@@ -816,7 +818,7 @@ static int gpio_set_mask_on_reg(gpio_ctx_t* ctx,
 	DEBUGF("Set indirect mask 0x%x on array.", indirect_mask);
 	if (indirect_mask & 1) {
 	    if (gpp[pin] == NULL) {
-		if (!ctx->auto_create) 
+		if (!ctx->auto_create)
 		    return GPIO_NOK; // ??
 		// We should initialize pin
 		if ((gp=init_pin(ctx, pin_reg, pin)) == NULL)
@@ -839,7 +841,7 @@ static int gpio_set_mask_on_reg(gpio_ctx_t* ctx,
 //--------------------------------------------------------------------
 static int gpio_set_mask_on_list(gpio_ctx_t* ctx,
 				 uint8_t pin_reg,
-				 uint32_t mask, 
+				 uint32_t mask,
 				 gpio_state_t state)
 {
     uint8_t pin = 0;
@@ -848,8 +850,8 @@ static int gpio_set_mask_on_list(gpio_ctx_t* ctx,
     while (mask) {
 	DEBUGF("Set mask 0x%x on linked list.", mask);
 	if (mask & 1) {
-	    if ((gp=find_or_create_pin(ctx, pin_reg, pin, 
-				       gpio_direction_out)) == NULL) 
+	    if ((gp=find_or_create_pin(ctx, pin_reg, pin,
+				       gpio_direction_out)) == NULL)
 		return GPIO_NOK; // ??
 	    gpio_set_state(ctx, gp, state);
 	}
@@ -894,7 +896,7 @@ static int gpio_get_mask_on_reg(gpio_ctx_t* ctx,
 	indirect_mask = mask & ~(ctx->reg1_direct_pins);
 	gpp = ctx->reg1;
     }
-    else 
+    else
 	return GPIO_NOK;
 
     while (indirect_mask) {
@@ -955,7 +957,7 @@ static int gpio_set_interrupt(gpio_pin_t* gp, gpio_interrupt_t interrupt)
     char* value = "";
     gpio_errno = EINVAL;
 
-    DEBUGF("set interrupt to %d on pin %d:%d", 
+    DEBUGF("set interrupt to %d on pin %d:%d",
 	   interrupt, gp->pin_reg, gp->pin);
 
     switch(interrupt) {
@@ -976,16 +978,15 @@ static int gpio_set_interrupt(gpio_pin_t* gp, gpio_interrupt_t interrupt)
 //--------------------------------------------------------------------
 static int add_interrupt(gpio_ctx_t* ctx, gpio_pin_t* gp)
 {
-    struct erl_drv_event_data evd;
 
 #ifdef USE_EPOLL
     if (INT_EVENT(ctx->epollfd) >= 0) {
 	struct epoll_event ev;
-	
+
 	ev.events  = EPOLLPRI | EPOLLERR;
 	ev.data.ptr = (void*) gp;
-	
-	if (epoll_ctl(INT_EVENT(ctx->epollfd), EPOLL_CTL_ADD, 
+
+	if (epoll_ctl(INT_EVENT(ctx->epollfd), EPOLL_CTL_ADD,
 		      INT_EVENT(gp->fd), &ev) < 0) {
 	    gpio_errno = errno;
 	    DEBUGF("Failed epoll_ctl add (%d) reason, %s",
@@ -994,8 +995,9 @@ static int add_interrupt(gpio_ctx_t* ctx, gpio_pin_t* gp)
 	}
 	return GPIO_OK;
     }
-#endif
+#else
     // fallback - that may work
+    struct erl_drv_event_data evd;
     evd.events = POLLPRI | POLLERR;
     evd.revents = 0;
     if (driver_event(ctx->port, gp->fd, &evd) < 0) {
@@ -1003,6 +1005,7 @@ static int add_interrupt(gpio_ctx_t* ctx, gpio_pin_t* gp)
 	return GPIO_NOK;
     }
     return GPIO_OK;
+#endif
 }
 
 //--------------------------------------------------------------------
@@ -1010,16 +1013,14 @@ static int add_interrupt(gpio_ctx_t* ctx, gpio_pin_t* gp)
 //--------------------------------------------------------------------
 static int del_interrupt(gpio_ctx_t* ctx, gpio_pin_t* gp)
 {
-    struct erl_drv_event_data evd;
-
 #ifdef USE_EPOLL
     if (INT_EVENT(ctx->epollfd) >= 0) {
 	struct epoll_event ev;
-	
+
 	ev.events  = 0;
 	ev.data.fd = INT_EVENT(gp->fd);
-	
-	if (epoll_ctl(INT_EVENT(ctx->epollfd), EPOLL_CTL_DEL, 
+
+	if (epoll_ctl(INT_EVENT(ctx->epollfd), EPOLL_CTL_DEL,
 		      INT_EVENT(gp->fd), &ev) < 0) {
 	    gpio_errno = errno;
 	    DEBUGF("Failed epoll_ctl del (%d) reason, %s",
@@ -1028,7 +1029,8 @@ static int del_interrupt(gpio_ctx_t* ctx, gpio_pin_t* gp)
 	}
 	return GPIO_OK;
     }
-#endif
+#else
+    struct erl_drv_event_data evd;
     // fallback - that may work
     evd.events  = 0;
     evd.revents = 0;
@@ -1037,6 +1039,7 @@ static int del_interrupt(gpio_ctx_t* ctx, gpio_pin_t* gp)
 	return GPIO_NOK;
     }
     return GPIO_OK;
+#endif
 }
 
 //--------------------------------------------------------------------
@@ -1047,13 +1050,13 @@ static int send_interrupt(gpio_ctx_t* ctx, gpio_pin_t* gp)
     ErlDrvTermData message[16];
     int i = 0;
     uint8_t state;
-    
+
     //if (gpio_get_state(ctx, gp, &state) != GPIO_OK)
     //goto error;
     // File must be read to stop interrupt from coming
     if (gpio_get_indirect(gp, &state) != GPIO_OK)
 	goto error;
-   
+
     // Format of info to activator
     // {gpio_interrupt, <reg>, <pin>, <value>}
     push_atom(ATOM(gpio_interrupt));
@@ -1061,10 +1064,10 @@ static int send_interrupt(gpio_ctx_t* ctx, gpio_pin_t* gp)
     push_int(gp->pin);
     push_int(state);
     push_tuple(4);
-    DSEND_TERM(ctx, gp->target, message, i); 
+    DSEND_TERM(ctx, gp->target, message, i);
     return 0;
 error:
-    DEBUGF("send_interrupt read error %c for pin %d:%d", 
+    DEBUGF("send_interrupt read error %c for pin %d:%d",
 	   (char)state, gp->pin_reg, gp->pin);
     return -1;
 }
@@ -1110,7 +1113,7 @@ static void dump(gpio_ctx_t* ctx)
     DEBUGF("Register 0:");
     for (i = 0; i < 32; i++) {
 	gp = ctx->reg0[i];
-	if (gp) 
+	if (gp)
 	    DEBUGF("Pin: %d, DirectFlag %d, Interrupt %d",
 		   gp->pin, gp->direct, gp->interrupt);
     }
@@ -1133,11 +1136,11 @@ static void dump(gpio_ctx_t* ctx)
     DEBUGF("Direct pin mask for register 0: %x", ctx->reg0_direct_pins);
     DEBUGF("Direct pin mask for register 1: %x", ctx->reg1_direct_pins);
     DEBUGF("Chipset %d", ctx->chipset);
-    if (ctx->gpio_reg) 
+    if (ctx->gpio_reg)
 	DEBUGF("Physical mem: %x", ctx->gpio_reg);
     else
 	DEBUGF("No physical memory mapped.");
-   
+
     return;
 
 }
@@ -1187,7 +1190,7 @@ static ErlDrvData gpio_drv_start(ErlDrvPort port, char* command)
     while (*ptr == ' ') ptr ++;
     while (*ptr) {
 	switch (*ptr) {
-	case 'n': 
+	case 'n':
 	    auto_create = false;
 	    DEBUGF("gpio_drv: auto create turned off.");
 	    break;
@@ -1258,7 +1261,7 @@ error:
 }
 
 //--------------------------------------------------------------------
-// Free memory etc 
+// Free memory etc
 //--------------------------------------------------------------------
 static void gpio_drv_stop(ErlDrvData d)
 {
@@ -1284,12 +1287,12 @@ static void gpio_drv_stop(ErlDrvData d)
 }
 
 //--------------------------------------------------------------------
-// General control reply function 
+// General control reply function
 //--------------------------------------------------------------------
-static ErlDrvSSizeT ctl_reply(int rep, 
-			      void* buf, 
+static ErlDrvSSizeT ctl_reply(int rep,
+			      void* buf,
 			      ErlDrvSizeT len,
-			      char** rbuf, 
+			      char** rbuf,
 			      ErlDrvSizeT rsize)
 {
     char* ptr;
@@ -1297,9 +1300,9 @@ static ErlDrvSSizeT ctl_reply(int rep,
     if ((len+1) > rsize) {
 #ifdef PORT_CONTROL_BINARY
 	ErlDrvBinary* bin = driver_alloc_binary(len+1);
-	if (bin == NULL) 
+	if (bin == NULL)
 	    return -1;
-	ptr = bin->orig_bytes;	
+	ptr = bin->orig_bytes;
 	*rbuf = (char*) bin;
 #else
 	if ((ptr = driver_alloc(len+1)) == NULL)
@@ -1316,11 +1319,11 @@ static ErlDrvSSizeT ctl_reply(int rep,
 
 //--------------------------------------------------------------------
 //--------------------------------------------------------------------
-static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d, 
-				 unsigned int cmd, 
-				 char* buf0, 
+static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d,
+				 unsigned int cmd,
+				 char* buf0,
 				 ErlDrvSizeT len,
-				 char** rbuf, 
+				 char** rbuf,
 				 ErlDrvSizeT rsize)
 {
     gpio_ctx_t* ctx = (gpio_ctx_t*) d;
@@ -1339,7 +1342,7 @@ static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d,
 	pin = get_uint8(buf+1);
 	direct_access = get_uint8(buf+2);
 
-	DEBUGF("gpio_drv: init: pin_reg=%d, pin=%d, direct_access %d", 
+	DEBUGF("gpio_drv: init: pin_reg=%d, pin=%d, direct_access %d",
 	       pin_reg, pin, direct_access);
 
 	// Chip set must be known for direct access
@@ -1389,8 +1392,8 @@ static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d,
 	pin_reg = get_uint8(buf);
 	pin = get_uint8(buf+1);
 
-	if ((gp = find_or_create_pin(ctx, pin_reg, pin, 
-				     gpio_direction_out)) == NULL) 
+	if ((gp = find_or_create_pin(ctx, pin_reg, pin,
+				     gpio_direction_out)) == NULL)
 	    goto error;
 	if (gpio_set_state(ctx, gp, gpio_state_high) != GPIO_OK)
 	    goto error;
@@ -1403,8 +1406,8 @@ static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d,
 	pin_reg = get_uint8(buf);
 	pin = get_uint8(buf+1);
 
-	if ((gp = find_or_create_pin(ctx, pin_reg, pin, 
-				     gpio_direction_out)) == NULL) 
+	if ((gp = find_or_create_pin(ctx, pin_reg, pin,
+				     gpio_direction_out)) == NULL)
 	    goto error;
 	if (gpio_set_state(ctx, gp, gpio_state_low) != GPIO_OK)
 	    goto error;
@@ -1418,8 +1421,8 @@ static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d,
 	pin_reg = get_uint8(buf);
 	pin = get_uint8(buf+1);
 
-	if ((gp = find_or_create_pin(ctx, pin_reg, pin, 
-				     gpio_direction_in)) == NULL) 
+	if ((gp = find_or_create_pin(ctx, pin_reg, pin,
+				     gpio_direction_in)) == NULL)
 	    goto error;
 
 	if (gpio_get_state(ctx, gp, &state) != GPIO_OK)
@@ -1438,7 +1441,7 @@ static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d,
 	dir = get_uint8(buf+2);
 
 	if ((gp=find_pin(ctx, pin_reg, pin, NULL)) == NULL) {
-	    if (!ctx->auto_create) 
+	    if (!ctx->auto_create)
 		goto badarg;
 	    if ((gp=init_pin(ctx, pin_reg, pin)) == NULL)
 		goto error;
@@ -1459,7 +1462,7 @@ static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d,
 	    gpio_errno = ENOENT;
 	    goto error;
 	}
-	
+
 	if (gpio_get_direction(ctx, gp, &direction) == GPIO_NOK)
 	    goto error;
 	dir = (uint8_t) direction;
@@ -1476,10 +1479,10 @@ static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d,
 	mask = get_uint32(buf+1);
 
 	if ((pin_reg == 0) || (pin_reg == 1))
-	    result = 
+	    result =
 		gpio_set_mask_on_reg(ctx, pin_reg, mask, gpio_state_high);
 	else
-	    result = 
+	    result =
 		gpio_set_mask_on_list(ctx, pin_reg, mask, gpio_state_high);
 
 	if (result == GPIO_NOK) goto error;
@@ -1523,8 +1526,8 @@ static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d,
 	pin = get_uint8(buf+1);
 	intval = (gpio_interrupt_t) get_uint8(buf+2);
 
-	if ((gp = find_or_create_pin(ctx, pin_reg, pin, 
-				     gpio_direction_in)) == NULL) 
+	if ((gp = find_or_create_pin(ctx, pin_reg, pin,
+				     gpio_direction_in)) == NULL)
 	    goto error;
 	if (gpio_set_interrupt(gp, intval) == GPIO_NOK)
 	    goto error;
@@ -1563,11 +1566,11 @@ static ErlDrvSSizeT gpio_drv_ctl(ErlDrvData d,
 	    goto error;
 	}
 	intval = (uint8_t) gp->interrupt;
-	DEBUGF("Read interrupt %d for pin %d:%d", 
+	DEBUGF("Read interrupt %d for pin %d:%d",
 	       intval, pin_reg, pin);
 	return ctl_reply(1, &intval, sizeof(intval), rbuf, rsize);
     }
-	
+
     case CMD_DEBUG_LEVEL: {
 	if (len != 1) goto badarg;
 	gpio_debug_level = get_int8(buf);
@@ -1594,7 +1597,7 @@ badarg:
 error:
     {
         char* err_str = erl_errno_id(gpio_errno);
-	DEBUGF("Failed executing %d on pin %d:%d, reason %s.", 
+	DEBUGF("Failed executing %d on pin %d:%d, reason %s.",
 	       cmd, pin_reg, pin, err_str);
 	return ctl_reply(255, err_str, strlen(err_str), rbuf, rsize);
     }
@@ -1624,6 +1627,7 @@ static void gpio_drv_outputv(ErlDrvData d, ErlIOVec *ev)
 
 //--------------------------------------------------------------------
 //--------------------------------------------------------------------
+#ifndef USE_EPOLL
 static void gpio_drv_event(ErlDrvData d, ErlDrvEvent e,
 				  ErlDrvEventData ed)
 {
@@ -1644,15 +1648,16 @@ static void gpio_drv_event(ErlDrvData d, ErlDrvEvent e,
 	send_interrupt(ctx, gp);
     return;
 error:
-    DEBUGF("gpio_drv_event read error (revents=%x) for pin %d:%d", 
+    DEBUGF("gpio_drv_event read error (revents=%x) for pin %d:%d",
 	   ed->revents, gp->pin_reg, gp->pin);
 }
+#endif
 
 //--------------------------------------------------------------------
 //--------------------------------------------------------------------
 static void gpio_drv_ready_input(ErlDrvData d, ErlDrvEvent e)
 {
-#ifdef USE_EPOLL    
+#ifdef USE_EPOLL
     gpio_ctx_t* ctx = (gpio_ctx_t*) d;
     DEBUGF("gpio_drv: ready_input called");
     if (ctx->epollfd == e) {
@@ -1693,7 +1698,7 @@ static void gpio_drv_timeout(ErlDrvData d)
 // file not in use anymore, see ERL_DRV_USE
 //--------------------------------------------------------------------
 static void gpio_drv_stop_select(ErlDrvEvent event, void* arg)
-{    
+{
     (void) arg;
     DEBUGF("gpio_drv: stop_select event=%d", INT_EVENT(event));
     close(INT_EVENT(event));
@@ -1721,7 +1726,9 @@ DRIVER_INIT(gpio_drv)
     ptr->ready_async = 0;
     ptr->flush = 0;
     ptr->call = 0;
+#ifndef USE_EPOLL
     ptr->event = gpio_drv_event;
+#endif
     ptr->extended_marker = ERL_DRV_EXTENDED_MARKER;
     ptr->major_version = ERL_DRV_EXTENDED_MAJOR_VERSION;
     ptr->minor_version = ERL_DRV_EXTENDED_MINOR_VERSION;
